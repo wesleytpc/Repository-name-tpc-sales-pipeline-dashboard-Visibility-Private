@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Opportunity {
+  id                String            @id @default(cuid())
+  companyName       String
+  contactName       String?
+  email             String?
+  phone             String?
+  industry          String?
+  product           String?
+  opportunityType   String?
+  stage             PipelineStage     @default(LEAD_IDENTIFIED)
+  estimatedValue    Float             @default(0)
+  probability       Int               @default(5)
+  expectedCloseDate DateTime?
+  nextStep          String?
+  nextStepDate      DateTime?
+  lastContactDate   DateTime?
+  status            OpportunityStatus @default(ACTIVE)
+  notes             String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  activities        Activity[]
+}
+
+model Activity {
+  id            String      @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  type          ActivityType
+  description   String?
+  activityDate  DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+
+  @@index([opportunityId])
+}
+
+enum PipelineStage {
+  LEAD_IDENTIFIED
+  CONTACT_MADE
+  DECISION_MAKER_REACHED
+  NEED_CONFIRMED
+  MEETING_HELD
+  DEMO_COMPLETED
+  PROPOSAL_SENT
+  NEGOTIATION_FOLLOW_UP
+  VERBAL_APPROVAL
+  PO_CONTRACT_INVOICE_REQUESTED
+  PAYMENT_RECEIVED
+  LOST_NO_FIT
+}
+
+enum OpportunityStatus {
+  ACTIVE
+  WON
+  LOST
+  ON_HOLD
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  MEETING
+  DEMO
+  PROPOSAL_SENT
+  FOLLOW_UP
+  NOTE
+  PAYMENT_RECEIVED
+}
