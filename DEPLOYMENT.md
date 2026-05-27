@@ -50,7 +50,11 @@ Add this environment variable in Vercel:
 
 ```env
 DATABASE_URL="your Supabase PostgreSQL connection string"
+BASIC_AUTH_USER="your-login-name"
+BASIC_AUTH_PASSWORD="a-private-password"
 ```
+
+The dashboard is protected in production with browser basic authentication. Local development stays open so you can work quickly on your machine.
 
 ## 4. Create The Online Database Tables
 
