@@ -28,3 +28,7 @@ export function toInputDate(date?: Date | string | null) {
   if (Number.isNaN(parsed.getTime())) return "";
   return parsed.toISOString().slice(0, 10);
 }
+
+export function toCsvDate(date?: Date | string | null) {
+  return toInputDate(date);
+}

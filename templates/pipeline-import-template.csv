@@ -1,0 +1,3 @@
+companyName,contactName,email,phone,industry,product,opportunityType,stage,estimatedValue,probability,expectedCloseDate,nextStep,nextStepDate,lastContactDate,status,notes
+Example Company,Example Contact,contact@example.com,820000000,Mining,Corporate Training,Training,LEAD_IDENTIFIED,50000,5,6/30/26,Follow up with decision-maker,6/7/26,5/28/26,ACTIVE,Replace this row with your real data
+wesleys company,Johanmac,wesley@info.com,823323986,mining,corperste ,training,LEAD_IDENTIFIED,50,50,6/30/26,Follow up with decision-maker,6/7/26,5/28/26,ACTIVE,
