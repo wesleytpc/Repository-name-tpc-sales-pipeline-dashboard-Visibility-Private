@@ -1,12 +1,21 @@
-import { Archive, CheckCircle2, ClipboardList, Inbox } from "lucide-react";
+import { Archive, CheckCircle2, PlusCircle } from "lucide-react";
+import { CopyPromptCard } from "@/components/CopyPromptCard";
+import { MeetingInboxPasteForm } from "@/components/MeetingInboxPasteForm";
 import { prisma } from "@/lib/prisma";
-import { applyMeetingInboxNote, archiveMeetingInboxNote, createMeetingInboxNote } from "@/lib/actions";
+import { applyMeetingInboxNote, archiveMeetingInboxNote, createOpportunityFromInboxNote } from "@/lib/actions";
 import { chatGptMeetingTemplate, parseMeetingInboxNote, type ParsedMeetingInboxNote } from "@/lib/meeting-inbox";
 import { formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default async function MeetingInboxPage() {
+export default async function MeetingInboxPage({
+  searchParams,
+}: {
+  searchParams?: {
+    saved?: string;
+    duplicate?: string;
+  };
+}) {
   const [notes, opportunities] = await Promise.all([
     prisma.meetingInboxNote.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.opportunity.findMany({ orderBy: { companyName: "asc" }, select: { id: true, companyName: true, stage: true } }),
@@ -28,39 +37,25 @@ export default async function MeetingInboxPage() {
         </div>
       </div>
 
-      <section className="grid gap-5 lg:grid-cols-[1fr_420px]">
-        <form action={createMeetingInboxNote} className="rounded-lg border border-slate-200 bg-white p-5 shadow-card">
-          <div className="flex items-center gap-2">
-            <Inbox className="h-5 w-5 text-orange-600" />
-            <h3 className="text-lg font-semibold">Paste New Meeting Note</h3>
-          </div>
-          <p className="mt-2 text-sm text-slate-600">
-            On iPhone, dictate into your dedicated ChatGPT chat, copy the structured output, then paste it here.
-          </p>
-          <textarea
-            name="rawText"
-            required
-            rows={18}
-            placeholder="Paste TPC_MEETING_NOTE_V1 output here..."
-            className="mt-4 w-full rounded-md border border-slate-300 p-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-          />
-          <button className="mt-4 w-full rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
-            Save to Inbox
-          </button>
-        </form>
+      {searchParams?.saved ? (
+        <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+          Meeting note saved to the inbox.
+        </p>
+      ) : null}
+      {searchParams?.duplicate ? (
+        <p className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-medium text-orange-700">
+          This exact meeting note is already in the inbox, so it was not added again.
+        </p>
+      ) : null}
 
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-card">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-orange-600" />
-            <h3 className="text-lg font-semibold">ChatGPT Starting Prompt</h3>
-          </div>
-          <p className="mt-2 text-sm text-slate-600">
-            Paste this once into your dedicated ChatGPT sales meeting chat.
-          </p>
-          <pre className="mt-4 max-h-[520px] overflow-auto rounded-md bg-slate-950 p-4 text-xs leading-5 text-white">
-            {chatGptMeetingTemplate}
-          </pre>
-        </div>
+      <section className="grid gap-5 lg:grid-cols-[1fr_420px]">
+        <MeetingInboxPasteForm />
+
+        <CopyPromptCard
+          title="ChatGPT Starting Prompt"
+          description="Paste this once into your dedicated ChatGPT sales meeting chat."
+          prompt={chatGptMeetingTemplate}
+        />
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-card">
@@ -97,6 +92,7 @@ function InboxNoteCard({
 }) {
   const parsed = (note.parsedJson as ParsedMeetingInboxNote | null) ?? parseMeetingInboxNote(note.rawText);
   const applyAction = applyMeetingInboxNote.bind(null, note.id);
+  const createAction = createOpportunityFromInboxNote.bind(null, note.id);
   const archiveAction = archiveMeetingInboxNote.bind(null, note.id);
   const inactive = ["APPLIED", "ARCHIVED"].includes(note.status);
 
@@ -138,6 +134,34 @@ function InboxNoteCard({
             <button className="inline-flex items-center justify-center gap-2 rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
               <CheckCircle2 className="h-4 w-4" />
               Apply to Pipeline
+            </button>
+          </form>
+          <form action={createAction} className="rounded-md border border-orange-200 bg-orange-50 p-3 md:min-w-[320px]">
+            <p className="text-sm font-semibold text-orange-950">Create New Opportunity</p>
+            <div className="mt-2 grid gap-2">
+              <input
+                name="companyName"
+                required
+                defaultValue={parsed.client ?? ""}
+                placeholder="New client / company name"
+                className="w-full rounded-md border border-orange-200 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+              />
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input
+                  name="industry"
+                  placeholder="Industry"
+                  className="w-full rounded-md border border-orange-200 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                />
+                <input
+                  name="product"
+                  placeholder="Product / service"
+                  className="w-full rounded-md border border-orange-200 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                />
+              </div>
+            </div>
+            <button className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+              <PlusCircle className="h-4 w-4" />
+              Create & Apply
             </button>
           </form>
           <form action={archiveAction}>

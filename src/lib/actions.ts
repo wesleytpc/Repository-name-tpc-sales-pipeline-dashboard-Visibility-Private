@@ -514,6 +514,18 @@ async function findMatchingOpportunity(client?: string | null) {
 
 export async function createMeetingInboxNote(formData: FormData) {
   const rawText = requiredString(formData.get("rawText"), "Meeting Inbox Note");
+  const duplicate = await prisma.meetingInboxNote.findFirst({
+    where: {
+      rawText,
+      status: { in: ["UNPROCESSED", "NEEDS_REVIEW"] },
+    },
+    select: { id: true },
+  });
+
+  if (duplicate) {
+    redirect("/meeting-inbox?duplicate=1");
+  }
+
   const parsed = parseMeetingInboxNote(rawText);
   const opportunity = await findMatchingOpportunity(parsed.client);
   const status = opportunity && parsed.summary ? "UNPROCESSED" : "NEEDS_REVIEW";
@@ -534,7 +546,7 @@ export async function createMeetingInboxNote(formData: FormData) {
 
   revalidatePath("/meeting-inbox");
   revalidatePath("/dashboard");
-  redirect("/meeting-inbox");
+  redirect("/meeting-inbox?saved=1");
 }
 
 export async function archiveMeetingInboxNote(id: string) {
@@ -630,6 +642,123 @@ export async function applyMeetingInboxNote(id: string, formData: FormData) {
         opportunityId,
         type: "MEETING",
         description: "Meeting inbox note applied to pipeline.",
+        activityDate: meetingDate,
+      },
+    });
+
+    await tx.meetingInboxNote.update({
+      where: { id },
+      data: {
+        status: "APPLIED",
+        matchedOpportunityId: opportunityId,
+        appliedAt: new Date(),
+        warning: null,
+      },
+    });
+  });
+
+  revalidatePath("/meeting-inbox");
+  revalidatePath("/dashboard");
+  revalidatePath("/opportunities");
+  revalidatePath(`/opportunities/${opportunityId}`);
+}
+
+export async function createOpportunityFromInboxNote(id: string, formData: FormData) {
+  const inboxNote = await prisma.meetingInboxNote.findUnique({ where: { id } });
+  if (!inboxNote) throw new Error("Meeting inbox note not found");
+
+  const parsed = (inboxNote.parsedJson as ParsedMeetingInboxNote | null) ?? parseMeetingInboxNote(inboxNote.rawText);
+  const companyName = requiredString(formData.get("companyName"), "Company Name");
+  const meetingDate = dateFromString(parsed.meetingDate) ?? new Date();
+  const nextActions = parsed.nextActions?.join("\n") || undefined;
+  const summary = parsed.summary || inboxNote.rawText.slice(0, 700);
+  const customerNotes = [
+    parsed.customerNotes,
+    parsed.painPoints?.length ? `Pain points:\n${parsed.painPoints.join("\n")}` : "",
+    parsed.paymentSignals ? `Payment signals:\n${parsed.paymentSignals}` : "",
+    parsed.notes ? `Notes:\n${parsed.notes}` : "",
+  ].filter(Boolean).join("\n\n") || undefined;
+  const stage = parsed.stageSuggestion ?? "MEETING_HELD";
+  const estimatedValue = parsed.paymentSchedule?.reduce((sum, payment) => sum + payment.amount, 0) ?? 0;
+
+  let opportunityId = "";
+
+  await prisma.$transaction(async (tx) => {
+    const opportunity = await tx.opportunity.create({
+      data: {
+        companyName,
+        contactName: parsed.contacts?.[0]?.fullName ?? null,
+        email: parsed.contacts?.[0]?.email ?? null,
+        phone: parsed.contacts?.[0]?.phone ?? null,
+        industry: optionalString(formData.get("industry")),
+        product: optionalString(formData.get("product")),
+        opportunityType: "Meeting Inbox",
+        stage,
+        probability: getProbabilityForStage(stage),
+        estimatedValue,
+        nextStep: nextActions,
+        nextStepDate: parsed.tasks?.[0]?.dueDate ? dateFromString(parsed.tasks[0].dueDate) : null,
+        lastContactDate: meetingDate,
+        notes: customerNotes,
+      },
+    });
+    opportunityId = opportunity.id;
+
+    await tx.meetingNote.create({
+      data: {
+        opportunityId,
+        title: parsed.client ? `${parsed.client} meeting` : "Meeting inbox note",
+        attendees: parsed.attendees?.join(", "),
+        summary,
+        customerNotes,
+        transcript: inboxNote.rawText,
+        nextActions,
+        meetingDate,
+      },
+    });
+
+    for (const contact of parsed.contacts ?? []) {
+      await tx.contact.create({
+        data: {
+          opportunityId,
+          fullName: contact.fullName,
+          role: contact.role,
+          email: contact.email,
+          phone: contact.phone,
+          influenceType: enumValue(contact.influenceType ?? null, Object.values(InfluenceType), "UNKNOWN"),
+          isDecisionMaker: String(contact.influenceType ?? "").toUpperCase().includes("DECISION"),
+        },
+      });
+    }
+
+    for (const task of parsed.tasks ?? []) {
+      await tx.task.create({
+        data: {
+          opportunityId,
+          title: task.title,
+          dueDate: dateFromString(task.dueDate),
+          priority: task.priority ?? "MEDIUM",
+        },
+      });
+    }
+
+    for (const payment of parsed.paymentSchedule ?? []) {
+      await tx.paymentSchedule.create({
+        data: {
+          opportunityId,
+          paymentType: payment.paymentType,
+          expectedAmount: payment.amount,
+          dueDate: dateFromString(payment.dueDate),
+          notes: parsed.paymentSignals,
+        },
+      });
+    }
+
+    await tx.activity.create({
+      data: {
+        opportunityId,
+        type: "MEETING",
+        description: "New opportunity created from meeting inbox note.",
         activityDate: meetingDate,
       },
     });

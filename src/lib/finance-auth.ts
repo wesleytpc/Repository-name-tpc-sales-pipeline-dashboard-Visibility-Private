@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 export const financeCookieName = "tpc_finance_access";
 
 function financePin() {
-  return process.env.FINANCE_PIN || "1234";
+  return process.env.FINANCE_PIN || "4714";
 }
 
 function financeSecret() {

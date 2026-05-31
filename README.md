@@ -55,6 +55,50 @@ npm run dev
 
 Open the local URL shown in the terminal and go to `/dashboard`.
 
+## Local and Live Environments
+
+Use separate environment files so local development and Supabase live data do not get mixed up.
+
+Local development:
+
+```text
+.env.local
+```
+
+This should point to your local Postgres database:
+
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/pipeline_dev"
+```
+
+Live production:
+
+```text
+.env.production
+```
+
+This should point to Supabase:
+
+```env
+DATABASE_URL="postgresql://postgres.ptevjbhccfwqwlszmstk:YOURPASSWORD@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"
+```
+
+Replace `YOURPASSWORD` and the live login placeholders inside `.env.production`. Do not commit or share real passwords.
+
+Use these commands when changing the database schema:
+
+```bash
+npm run db:push:local
+npm run db:generate:local
+```
+
+For Supabase/live:
+
+```bash
+npm run db:push:prod
+npm run db:generate:prod
+```
+
 ## Useful Commands
 
 ```bash
@@ -132,7 +176,7 @@ The Finance page includes starter commission profiles for:
 The Finance page is protected by a 4-digit PIN. Add this to your `.env` file and change the PIN to your own number:
 
 ```env
-FINANCE_PIN="1234"
+FINANCE_PIN="4714"
 FINANCE_PIN_SECRET="change-this-finance-cookie-secret"
 ```
 

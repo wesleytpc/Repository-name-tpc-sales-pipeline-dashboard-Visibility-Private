@@ -9,6 +9,10 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
+    "db:push:local": "node --env-file=.env.local ./node_modules/prisma/build/index.js db push",
+    "db:push:prod": "node --env-file=.env.production ./node_modules/prisma/build/index.js db push",
+    "db:generate:local": "node --env-file=.env.local ./node_modules/prisma/build/index.js generate",
+    "db:generate:prod": "node --env-file=.env.production ./node_modules/prisma/build/index.js generate",
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {

@@ -11,28 +11,23 @@ const inputClass =
   "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100";
 
 async function ensureDefaultSalespeople() {
-  await Promise.all([
-    prisma.salesperson.upsert({
-      where: { slug: "wesley" },
-      update: {},
-      create: {
+  await prisma.salesperson.createMany({
+    data: [
+      {
         slug: "wesley",
         fullName: "Wesley",
         defaultCommissionRate: 0,
         notes: "Commission profile for Wesley. Final commission rules to be added once the contract structure is confirmed.",
       },
-    }),
-    prisma.salesperson.upsert({
-      where: { slug: "helena" },
-      update: {},
-      create: {
+      {
         slug: "helena",
         fullName: "Helena",
         defaultCommissionRate: 0,
         notes: "Commission profile for Helena. Final commission rules to be added once the contract structure is confirmed.",
       },
-    }),
-  ]);
+    ],
+    skipDuplicates: true,
+  });
 }
 
 export default async function FinancePage({
@@ -85,7 +80,7 @@ export default async function FinancePage({
         </form>
 
         <section className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
-          Set the PIN in your `.env` file with `FINANCE_PIN="1234"`. Change `1234` to your own 4-digit number.
+          Set the PIN in your `.env` file with `FINANCE_PIN="4714"`. Change `4714` to your own 4-digit number.
         </section>
       </div>
     );
