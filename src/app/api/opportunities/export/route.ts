@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { toCsvDate } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 const columns = [
   "companyName",
   "contactName",

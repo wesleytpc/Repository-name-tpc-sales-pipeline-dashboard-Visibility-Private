@@ -182,8 +182,39 @@ const opportunities: Array<{
 ];
 
 async function main() {
+  await prisma.slipItem.deleteMany();
+  await prisma.slipReceipt.deleteMany();
+  await prisma.idea.deleteMany();
+  await prisma.meetingInboxNote.deleteMany();
+  await prisma.salesDocument.deleteMany();
+  await prisma.touchpoint.deleteMany();
+  await prisma.paymentSchedule.deleteMany();
+  await prisma.proposal.deleteMany();
+  await prisma.task.deleteMany();
+  await prisma.contact.deleteMany();
+  await prisma.paymentRecord.deleteMany();
+  await prisma.meetingAttachment.deleteMany();
+  await prisma.meetingNote.deleteMany();
   await prisma.activity.deleteMany();
   await prisma.opportunity.deleteMany();
+  await prisma.salesperson.deleteMany();
+
+  await prisma.salesperson.createMany({
+    data: [
+      {
+        slug: "wesley",
+        fullName: "Wesley",
+        defaultCommissionRate: 0,
+        notes: "Commission profile for Wesley. Final commission rules to be added once the contract structure is confirmed.",
+      },
+      {
+        slug: "helena",
+        fullName: "Helena",
+        defaultCommissionRate: 0,
+        notes: "Commission profile for Helena. Final commission rules to be added once the contract structure is confirmed.",
+      },
+    ],
+  });
 
   for (const item of opportunities) {
     const opportunity = await prisma.opportunity.create({
@@ -208,6 +239,46 @@ async function main() {
     if (activities.length) {
       await prisma.activity.createMany({
         data: activities.map((activity) => ({ ...activity, opportunityId: opportunity.id })),
+      });
+    }
+
+    if (["MEETING_HELD", "DEMO_COMPLETED", "PROPOSAL_SENT"].includes(item.stage)) {
+      await prisma.meetingNote.create({
+        data: {
+          opportunityId: opportunity.id,
+          title: `${item.product} discussion`,
+          attendees: [item.contactName, "TPC Sales"].filter(Boolean).join(", "),
+          summary: `Discussed ${item.product.toLowerCase()} requirements, current operational challenges and the commercial next step.`,
+          customerNotes: "Client wants practical outcomes, clear timelines and a simple implementation plan.",
+          nextActions: item.nextStep,
+          meetingDate: item.lastContactDate ?? new Date("2026-05-24"),
+        },
+      });
+    }
+
+    if (item.stage === "PAYMENT_RECEIVED") {
+      await prisma.paymentRecord.create({
+        data: {
+          opportunityId: opportunity.id,
+          paymentType: "FINAL_PAYMENT",
+          amount: item.estimatedValue,
+          receivedDate: item.lastContactDate ?? new Date("2026-05-16"),
+          reference: "Seed payment",
+          notes: "Full payment received.",
+        },
+      });
+    }
+
+    if (item.companyName === "Unity Learning Prospect") {
+      await prisma.paymentRecord.create({
+        data: {
+          opportunityId: opportunity.id,
+          paymentType: "DEPOSIT",
+          amount: 45000,
+          receivedDate: new Date("2026-05-27"),
+          reference: "Development deposit",
+          notes: "Deposit received while final invoice and rollout dates are still being confirmed.",
+        },
       });
     }
   }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Download, Plus, Upload } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { PipelineBoard } from "@/components/PipelineBoard";
 import { OpportunityTable } from "@/components/OpportunityTable";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,7 @@ export default async function OpportunitiesPage() {
           </Link>
         </div>
       </div>
+      <PipelineBoard opportunities={opportunities} />
       <OpportunityTable opportunities={opportunities} />
     </div>
   );

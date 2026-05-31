@@ -16,6 +16,9 @@ model Opportunity {
   industry          String?
   product           String?
   opportunityType   String?
+  productCategory   ProductCategory?
+  outcomeType       ClientOutcomeType?
+  leadSource        LeadSource?
   stage             PipelineStage     @default(LEAD_IDENTIFIED)
   estimatedValue    Float             @default(0)
   probability       Int               @default(5)
@@ -24,10 +27,19 @@ model Opportunity {
   nextStepDate      DateTime?
   lastContactDate   DateTime?
   status            OpportunityStatus @default(ACTIVE)
+  lostReason        LostReason?
   notes             String?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   activities        Activity[]
+  meetingNotes      MeetingNote[]
+  paymentRecords    PaymentRecord[]
+  contacts          Contact[]
+  tasks             Task[]
+  proposals         Proposal[]
+  paymentSchedules  PaymentSchedule[]
+  touchpoints       Touchpoint[]
+  salesDocuments    SalesDocument[]
 }
 
 model Activity {
@@ -40,6 +52,241 @@ model Activity {
   createdAt     DateTime    @default(now())
 
   @@index([opportunityId])
+}
+
+model MeetingNote {
+  id            String      @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  title         String?
+  attendees     String?
+  summary       String
+  customerNotes String?
+  transcript    String?
+  recordingUrl  String?
+  nextActions   String?
+  meetingDate   DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  attachments   MeetingAttachment[]
+
+  @@index([opportunityId])
+  @@index([meetingDate])
+}
+
+model MeetingAttachment {
+  id            String      @id @default(cuid())
+  meetingNoteId String
+  meetingNote   MeetingNote @relation(fields: [meetingNoteId], references: [id], onDelete: Cascade)
+  fileName      String
+  mimeType      String?
+  fileData      String?
+  createdAt     DateTime    @default(now())
+
+  @@index([meetingNoteId])
+}
+
+model PaymentRecord {
+  id            String      @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  paymentType   PaymentType
+  amount        Float
+  receivedDate  DateTime    @default(now())
+  reference     String?
+  notes         String?
+  createdAt     DateTime    @default(now())
+
+  @@index([opportunityId])
+  @@index([receivedDate])
+}
+
+model Contact {
+  id              String        @id @default(cuid())
+  opportunityId   String
+  opportunity     Opportunity   @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  fullName        String
+  email           String?
+  phone           String?
+  role            String?
+  influenceType   InfluenceType @default(UNKNOWN)
+  isDecisionMaker Boolean       @default(false)
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([opportunityId])
+}
+
+model Task {
+  id            String      @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  dueDate       DateTime?
+  priority      TaskPriority @default(MEDIUM)
+  status        TaskStatus   @default(OPEN)
+  assignee      String?
+  completedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([opportunityId])
+  @@index([dueDate])
+  @@index([status])
+}
+
+model Proposal {
+  id            String      @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  quoteNumber   String?
+  amount        Float
+  sentDate      DateTime?
+  expiryDate    DateTime?
+  fileName      String?
+  mimeType      String?
+  fileData      String?
+  revisionNotes String?
+  createdAt     DateTime    @default(now())
+
+  @@index([opportunityId])
+  @@index([sentDate])
+}
+
+model PaymentSchedule {
+  id            String                @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity           @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  paymentType   PaymentType
+  expectedAmount Float
+  dueDate       DateTime?
+  status        PaymentScheduleStatus @default(EXPECTED)
+  notes         String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@index([opportunityId])
+  @@index([dueDate])
+  @@index([status])
+}
+
+model Touchpoint {
+  id            String           @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity      @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  type          TouchpointType
+  subject       String?
+  description   String?
+  direction     TouchpointDirection @default(OUTBOUND)
+  touchpointDate DateTime        @default(now())
+  createdAt     DateTime        @default(now())
+
+  @@index([opportunityId])
+  @@index([touchpointDate])
+  @@index([type])
+}
+
+model SalesDocument {
+  id            String            @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  type          SalesDocumentType
+  title         String
+  sentDate      DateTime?
+  recipient     String?
+  fileName      String?
+  mimeType      String?
+  fileData      String?
+  notes         String?
+  createdAt     DateTime          @default(now())
+
+  @@index([opportunityId])
+  @@index([sentDate])
+  @@index([type])
+}
+
+model MeetingInboxNote {
+  id                   String             @id @default(cuid())
+  rawText              String
+  parsedJson           Json?
+  status               MeetingInboxStatus @default(UNPROCESSED)
+  matchedOpportunityId String?
+  warning              String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  appliedAt            DateTime?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Idea {
+  id          String       @id @default(cuid())
+  title       String
+  category    IdeaCategory @default(OTHER)
+  status      IdeaStatus   @default(NEW)
+  priority    IdeaPriority @default(MEDIUM)
+  notes       String?
+  opportunityId String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([status])
+  @@index([category])
+  @@index([priority])
+}
+
+model Salesperson {
+  id                    String            @id @default(cuid())
+  slug                  String            @unique
+  fullName              String
+  email                 String?
+  phone                 String?
+  defaultCommissionRate Float             @default(0)
+  status                SalespersonStatus @default(ACTIVE)
+  notes                 String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([status])
+}
+
+model SlipReceipt {
+  id            String            @id @default(cuid())
+  receiptDate   DateTime
+  merchant      String
+  category      SlipCategory      @default(OTHER)
+  paymentMethod SlipPaymentMethod @default(CARD)
+  totalAmount   Float
+  vatAmount     Float?
+  source        SlipSource        @default(CHATGPT)
+  capturedBy    String?
+  notes         String?
+  rawText       String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  items         SlipItem[]
+
+  @@index([receiptDate])
+  @@index([category])
+  @@index([merchant])
+  @@index([paymentMethod])
+}
+
+model SlipItem {
+  id          String      @id @default(cuid())
+  receiptId   String
+  receipt     SlipReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  description String
+  category    SlipCategory @default(OTHER)
+  quantity    Float?
+  amount      Float?
+  createdAt   DateTime    @default(now())
+
+  @@index([receiptId])
+  @@index([category])
 }
 
 enum PipelineStage {
@@ -64,6 +311,11 @@ enum OpportunityStatus {
   ON_HOLD
 }
 
+enum SalespersonStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum ActivityType {
   CALL
   EMAIL
@@ -73,4 +325,196 @@ enum ActivityType {
   FOLLOW_UP
   NOTE
   PAYMENT_RECEIVED
+}
+
+enum PaymentType {
+  DEPOSIT
+  DEVELOPMENT_MILESTONE
+  SUBSCRIPTION
+  RETAINER
+  FINAL_PAYMENT
+  PART_PAYMENT
+  OTHER
+}
+
+enum LeadSource {
+  REFERRAL
+  WEBSITE
+  WHATSAPP
+  EXISTING_CLIENT
+  CAMPAIGN
+  COLD_OUTREACH
+  PARTNER
+  EVENT
+  SOCIAL_MEDIA
+  OTHER
+}
+
+enum LostReason {
+  COMPETITOR
+  NO_BUDGET
+  NO_DECISION
+  POOR_FIT
+  TIMING
+  PRICE
+  INTERNAL_DELAY
+  OTHER
+}
+
+enum ProductCategory {
+  MINING_TRAINING
+  AI_IN_THE_WORKPLACE
+  UNITY_LMS
+  ASSET_DASHBOARD
+  VEHICLE_FUEL_DASHBOARD
+  HEALTH_AND_SAFETY_TRAINING
+  MICROSOFT_OFFICE_TRAINING
+  ECD_TRAINING
+  CYBER_RISK_PROGRAMME
+  TRADING_PROGRAMME
+  SCHOOL_CAMPAIGN
+  DEVELOPMENT_PROJECT
+  OTHER
+}
+
+enum InfluenceType {
+  DECISION_MAKER
+  CHAMPION
+  INFLUENCER
+  BLOCKER
+  FINANCE
+  TECHNICAL
+  UNKNOWN
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentScheduleStatus {
+  EXPECTED
+  INVOICED
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum MeetingInboxStatus {
+  UNPROCESSED
+  NEEDS_REVIEW
+  APPLIED
+  ARCHIVED
+}
+
+enum TouchpointType {
+  EMAIL_SENT
+  WHATSAPP_SENT
+  PHONE_CALL
+  SMS_SENT
+  INFO_SENT
+  BROCHURE_SENT
+  COURSE_OUTLINE_SENT
+  COMPANY_PROFILE_SENT
+  QUOTE_SENT
+  INVOICE_SENT
+  FOLLOW_UP
+  NO_ANSWER
+  OTHER
+}
+
+enum TouchpointDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum SalesDocumentType {
+  BROCHURE
+  COURSE_OUTLINE
+  COMPANY_PROFILE
+  INFO_PACK
+  PROPOSAL
+  QUOTE
+  INVOICE
+  CONTRACT
+  OTHER
+}
+
+enum ClientOutcomeType {
+  TRAINING_BOOKING
+  COURSE_ENROLMENT
+  SOFTWARE_SALE
+  DEVELOPMENT_PROJECT
+  SUBSCRIPTION
+  CONSULTING
+  LEARNER_RECRUITMENT
+  REPEAT_BUSINESS
+  OTHER
+}
+
+enum IdeaCategory {
+  SALES_CAMPAIGN
+  CLIENT_FOLLOW_UP
+  PRODUCT_IDEA
+  TRAINING_IDEA
+  MARKETING_MESSAGE
+  PARTNERSHIP
+  PROCESS_IMPROVEMENT
+  OTHER
+}
+
+enum IdeaStatus {
+  NEW
+  EXPLORING
+  IN_PROGRESS
+  PARKED
+  DONE
+}
+
+enum IdeaPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum SlipCategory {
+  GROCERIES
+  FUEL
+  HARDWARE
+  PET_FOOD
+  HOUSEHOLD
+  MEDICAL
+  SCHOOL_KIDS
+  EATING_OUT
+  CLOTHING
+  SUBSCRIPTIONS
+  VEHICLE
+  CASH_SPEND
+  PERSONAL
+  OTHER
+}
+
+enum SlipPaymentMethod {
+  CARD
+  CASH
+  EFT
+  BANK_TRANSFER
+  CREDIT_CARD
+  DEBIT_CARD
+  OTHER
+}
+
+enum SlipSource {
+  MANUAL
+  CHATGPT
+  CSV_IMPORT
 }

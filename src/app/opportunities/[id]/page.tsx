@@ -5,15 +5,38 @@ import { prisma } from "@/lib/prisma";
 import { calculateWeightedValue, getStageBadgeClass, getStageLabel, isProposalStage } from "@/lib/pipeline";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
 import { ActivityLog } from "@/components/ActivityLog";
+import { ContactList } from "@/components/ContactList";
+import { FinancialSummary } from "@/components/FinancialSummary";
+import { MeetingNotes } from "@/components/MeetingNotes";
+import { PaymentRecords } from "@/components/PaymentRecords";
+import { PaymentScheduleList } from "@/components/PaymentScheduleList";
+import { PipelineJourney } from "@/components/PipelineJourney";
+import { ProposalList } from "@/components/ProposalList";
+import { RelationshipTimeline } from "@/components/RelationshipTimeline";
+import { SalesDocumentList } from "@/components/SalesDocumentList";
+import { StageChecklist } from "@/components/StageChecklist";
+import { TaskList } from "@/components/TaskList";
+import { TouchpointList } from "@/components/TouchpointList";
 
 export const dynamic = "force-dynamic";
 
 export default async function OpportunityDetailPage({ params }: { params: { id: string } }) {
   const opportunity = await prisma.opportunity.findUnique({
     where: { id: params.id },
-    include: { activities: { orderBy: { activityDate: "desc" } } },
+    include: {
+      activities: { orderBy: { activityDate: "desc" } },
+      meetingNotes: { include: { attachments: true }, orderBy: { meetingDate: "desc" } },
+      paymentRecords: { orderBy: { receivedDate: "desc" } },
+      contacts: { orderBy: [{ isDecisionMaker: "desc" }, { createdAt: "desc" }] },
+      tasks: { orderBy: [{ status: "asc" }, { dueDate: "asc" }] },
+      proposals: { orderBy: { createdAt: "desc" } },
+      paymentSchedules: { orderBy: { dueDate: "asc" } },
+      touchpoints: { orderBy: { touchpointDate: "desc" } },
+      salesDocuments: { orderBy: { createdAt: "desc" } },
+    },
   });
   if (!opportunity) notFound();
+  const fundsReceived = opportunity.paymentRecords.reduce((sum, payment) => sum + payment.amount, 0);
 
   const fields = [
     ["Contact Person", opportunity.contactName],
@@ -21,9 +44,13 @@ export default async function OpportunityDetailPage({ params }: { params: { id: 
     ["Phone", opportunity.phone],
     ["Industry", opportunity.industry],
     ["Product", opportunity.product],
+    ["Product Category", opportunity.productCategory?.replace(/_/g, " ")],
     ["Opportunity Type", opportunity.opportunityType],
+    ["Client Outcome Type", opportunity.outcomeType?.replace(/_/g, " ")],
+    ["Lead Source", opportunity.leadSource?.replace(/_/g, " ")],
     ["Stage", getStageLabel(opportunity.stage)],
     ["Estimated Value", formatCurrency(opportunity.estimatedValue)],
+    ["Funds Received", formatCurrency(fundsReceived)],
     ["Probability", formatPercent(opportunity.probability)],
     ["Weighted Value", formatCurrency(calculateWeightedValue(opportunity.estimatedValue, opportunity.probability))],
     ["Expected Close Date", formatDate(opportunity.expectedCloseDate)],
@@ -31,6 +58,7 @@ export default async function OpportunityDetailPage({ params }: { params: { id: 
     ["Next Step Date", formatDate(opportunity.nextStepDate)],
     ["Last Contact Date", formatDate(opportunity.lastContactDate)],
     ["Status", opportunity.status.replace("_", " ")],
+    ["Lost Reason", opportunity.lostReason?.replace(/_/g, " ")],
     ["Created At", formatDate(opportunity.createdAt)],
     ["Updated At", formatDate(opportunity.updatedAt)],
   ];
@@ -77,6 +105,37 @@ export default async function OpportunityDetailPage({ params }: { params: { id: 
         <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">Current Win Status</p>
         <p className="mt-1 text-lg font-semibold text-slate-950">{winStatus}</p>
       </section>
+
+      <PipelineJourney stage={opportunity.stage} />
+
+      <FinancialSummary opportunity={opportunity} paymentRecords={opportunity.paymentRecords} paymentSchedules={opportunity.paymentSchedules} />
+
+      <StageChecklist opportunity={opportunity} />
+
+      <RelationshipTimeline
+        activities={opportunity.activities}
+        meetingNotes={opportunity.meetingNotes}
+        paymentRecords={opportunity.paymentRecords}
+        proposals={opportunity.proposals}
+        salesDocuments={opportunity.salesDocuments}
+        touchpoints={opportunity.touchpoints}
+      />
+
+      <TaskList opportunityId={opportunity.id} tasks={opportunity.tasks} />
+
+      <TouchpointList opportunityId={opportunity.id} touchpoints={opportunity.touchpoints} />
+
+      <SalesDocumentList opportunityId={opportunity.id} documents={opportunity.salesDocuments} />
+
+      <ContactList opportunityId={opportunity.id} contacts={opportunity.contacts} />
+
+      <ProposalList opportunityId={opportunity.id} proposals={opportunity.proposals} />
+
+      <PaymentScheduleList opportunityId={opportunity.id} schedules={opportunity.paymentSchedules} />
+
+      <PaymentRecords opportunityId={opportunity.id} paymentRecords={opportunity.paymentRecords} />
+
+      <MeetingNotes opportunityId={opportunity.id} meetingNotes={opportunity.meetingNotes} />
 
       <ActivityLog opportunityId={opportunity.id} activities={opportunity.activities} />
     </div>

@@ -1,22 +1,31 @@
-import { Banknote, BriefcaseBusiness, CalendarClock, CheckCircle2, FileText, MoveUpRight, ReceiptText, TrendingUp } from "lucide-react";
+import { Banknote, BriefcaseBusiness, CalendarClock, CheckCircle2, FileText, ListTodo, MoveUpRight, ReceiptText, TrendingUp } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { calculateWeightedValue, getCurrentWeekStart, isOverdue, isRevenueStage } from "@/lib/pipeline";
 import { formatCurrency } from "@/lib/format";
+import { ConversionFunnel } from "@/components/ConversionFunnel";
 import { DashboardCard } from "@/components/DashboardCard";
 import { PipelineCharts } from "@/components/PipelineCharts";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const opportunities = await prisma.opportunity.findMany({ orderBy: { updatedAt: "desc" } });
+  const opportunities = await prisma.opportunity.findMany({
+    include: { paymentRecords: true, tasks: true, paymentSchedules: true },
+    orderBy: { updatedAt: "desc" },
+  });
   const active = opportunities.filter((item) => item.status === "ACTIVE");
 
   const totalPipeline = active.reduce((sum, item) => sum + item.estimatedValue, 0);
   const weightedPipeline = active.reduce((sum, item) => sum + calculateWeightedValue(item.estimatedValue, item.probability), 0);
   const proposalValue = opportunities.filter((item) => item.stage === "PROPOSAL_SENT").reduce((sum, item) => sum + item.estimatedValue, 0);
   const revenueClosed = opportunities.filter((item) => item.status === "WON" || isRevenueStage(item.stage)).reduce((sum, item) => sum + item.estimatedValue, 0);
-  const moneyReceived = opportunities.filter((item) => item.stage === "PAYMENT_RECEIVED").reduce((sum, item) => sum + item.estimatedValue, 0);
+  const moneyReceived = opportunities.reduce(
+    (sum, item) => sum + item.paymentRecords.reduce((paymentSum, payment) => paymentSum + payment.amount, 0),
+    0,
+  );
   const overdue = active.filter((item) => isOverdue(item.nextStepDate)).length;
+  const overdueTasks = opportunities.flatMap((item) => item.tasks).filter((task) => task.status !== "COMPLETED" && task.status !== "CANCELLED" && isOverdue(task.dueDate)).length;
+  const expectedCashIn = opportunities.flatMap((item) => item.paymentSchedules).filter((schedule) => !["PAID", "CANCELLED"].includes(schedule.status)).reduce((sum, schedule) => sum + schedule.expectedAmount, 0);
   const movedThisWeek = active.filter((item) => item.updatedAt >= getCurrentWeekStart()).length;
 
   return (
@@ -27,8 +36,10 @@ export default async function DashboardPage() {
         <DashboardCard title="Weighted Pipeline Value" value={formatCurrency(weightedPipeline)} icon={MoveUpRight} />
         <DashboardCard title="Quotes / Proposals Sent Value" value={formatCurrency(proposalValue)} icon={FileText} />
         <DashboardCard title="Revenue Closed" value={formatCurrency(revenueClosed)} icon={ReceiptText} />
-        <DashboardCard title="Money Received" value={formatCurrency(moneyReceived)} icon={Banknote} note="Final win: money in the bank." />
+        <DashboardCard title="Money Received" value={formatCurrency(moneyReceived)} icon={Banknote} note="Recorded deposits, subscriptions, milestones and final payments." />
+        <DashboardCard title="Expected Cash-In" value={formatCurrency(expectedCashIn)} icon={ReceiptText} note="Open expected payments and milestones." />
         <DashboardCard title="Overdue Follow-Ups" value={overdue} icon={CalendarClock} />
+        <DashboardCard title="Overdue Tasks" value={overdueTasks} icon={ListTodo} />
         <DashboardCard title="Moved Forward This Week" value={movedThisWeek} icon={CheckCircle2} />
       </section>
 
@@ -51,6 +62,8 @@ export default async function DashboardPage() {
           </p>
         </aside>
       </section>
+
+      <ConversionFunnel opportunities={opportunities} />
     </div>
   );
 }
