@@ -6,7 +6,7 @@ import { BarChart3, Bell, FileUp, Inbox, LayoutDashboard, Lightbulb, ListChecks,
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/opportunities", label: "Opportunities", icon: ListChecks },
+  { href: "/opportunities", label: "Leads", icon: ListChecks },
   { href: "/meeting-inbox", label: "Meeting Inbox", icon: Inbox },
   { href: "/ideas", label: "Ideas Board", icon: Lightbulb },
   { href: "/finance", label: "Finance", icon: WalletCards },

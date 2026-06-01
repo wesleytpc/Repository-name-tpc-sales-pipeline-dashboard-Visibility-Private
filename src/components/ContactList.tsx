@@ -28,7 +28,7 @@ export function ContactList({ opportunityId, contacts }: { opportunityId: string
               {contact.notes ? <p className="mt-3 whitespace-pre-line text-sm text-slate-700">{contact.notes}</p> : null}
             </article>
           )) : (
-            <EmptyState title="No contacts yet" message="Add decision-makers, champions, finance contacts and blockers for this opportunity." />
+            <EmptyState title="No contacts yet" message="Add decision-makers, champions, finance contacts and blockers for this lead." />
           )}
         </div>
       </section>

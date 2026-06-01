@@ -39,7 +39,7 @@ export function TaskList({ opportunityId, tasks }: { opportunityId: string; task
               ) : null}
             </article>
           )) : (
-            <EmptyState title="No tasks yet" message="Add follow-ups, proposal reminders and payment chase actions for this opportunity." />
+            <EmptyState title="No tasks yet" message="Add follow-ups, proposal reminders and payment chase actions for this lead." />
           )}
         </div>
       </section>

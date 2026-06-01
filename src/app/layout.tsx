@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "TPC Sales Pipeline Dashboard",
-  description: "Track sales opportunities, pipeline movement and money in the bank.",
+  description: "Track sales leads, pipeline movement and money in the bank.",
 };
 
 export const dynamic = "force-dynamic";

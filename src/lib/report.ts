@@ -25,7 +25,7 @@ export function getReportMetrics(opportunities: ReportOpportunity[]) {
   const openTasks = opportunities.flatMap((item) => item.tasks.filter((task) => task.status !== "COMPLETED" && task.status !== "CANCELLED"));
   const overdueTasks = openTasks.filter((task) => isOverdue(task.dueDate));
   const proposalWithoutFollowUp = active.filter((item) => item.stage === "PROPOSAL_SENT" && !item.nextStepDate);
-  const verbalNoInvoice = active.filter((item) => item.stage === "VERBAL_APPROVAL" && !item.proposals.length);
+  const approvalNoInvoice = active.filter((item) => ["VERBAL_APPROVAL", "PO_CONTRACT_INVOICE_REQUESTED"].includes(item.stage) && !item.paymentRecords.length);
   const invoiceNoPayment = active.filter((item) => item.stage === "PO_CONTRACT_INVOICE_REQUESTED" && !item.paymentRecords.length);
   const highValueNoNextStep = active.filter((item) => item.estimatedValue >= 100000 && !item.nextStep && !item.nextStepDate);
   const expectedPayments = opportunities.flatMap((item) => item.paymentSchedules.filter((schedule) => !["PAID", "CANCELLED"].includes(schedule.status)));
@@ -47,7 +47,7 @@ export function getReportMetrics(opportunities: ReportOpportunity[]) {
     ["Proposal sent", "PROPOSAL_SENT"],
   ] as const;
 
-  const summary = `This month, I am managing ${active.length} active opportunities with a total pipeline value of ${formatCurrency(activePipeline)} and a weighted pipeline value of ${formatCurrency(weightedPipeline)}. ${proposalOpportunities.length} opportunities are currently at proposal stage, with ${formatCurrency(quotesSentValue)} in quoted value. ${overdueFollowUps.length} opportunities require overdue follow-up. The main focus for the next week is to move proposal-stage opportunities toward approval and convert short-term training opportunities into paid bookings.`;
+  const summary = `This month, I am managing ${active.length} active leads with a total pipeline value of ${formatCurrency(activePipeline)} and a weighted pipeline value of ${formatCurrency(weightedPipeline)}. ${proposalOpportunities.length} leads are currently at proposal stage, with ${formatCurrency(quotesSentValue)} in quoted value. ${overdueFollowUps.length} leads require overdue follow-up. The main focus for the next week is to move proposal-stage leads toward approval and convert short-term training leads into paid bookings.`;
 
   return {
     active,
@@ -63,7 +63,7 @@ export function getReportMetrics(opportunities: ReportOpportunity[]) {
     openTasks,
     overdueTasks,
     proposalWithoutFollowUp,
-    verbalNoInvoice,
+    verbalNoInvoice: approvalNoInvoice,
     invoiceNoPayment,
     highValueNoNextStep,
     expectedPayments,

@@ -119,7 +119,7 @@ export const chatGptMeetingTemplate = `You are my TPC Sales Pipeline meeting not
 I will dictate messy meeting notes after client meetings. Convert every note into this exact format.
 Use only the fields below. Do not add extra headings. If something is unknown, leave the section blank.
 Use YYYY-MM-DD dates. Use valid stage suggestions only from:
-LEAD_IDENTIFIED, CONTACT_MADE, DECISION_MAKER_REACHED, NEED_CONFIRMED, MEETING_HELD, DEMO_COMPLETED, PROPOSAL_SENT, NEGOTIATION_FOLLOW_UP, VERBAL_APPROVAL, PO_CONTRACT_INVOICE_REQUESTED, PAYMENT_RECEIVED, LOST_NO_FIT.
+LEAD_IDENTIFIED, CONTACT_MADE, DECISION_MAKER_REACHED, NEED_CONFIRMED, MEETING_HELD, DEMO_COMPLETED, PROPOSAL_SENT, NEGOTIATION_FOLLOW_UP, PO_CONTRACT_INVOICE_REQUESTED, PAYMENT_RECEIVED, LOST_NO_FIT.
 
 Use payment types only from:
 DEPOSIT, DEVELOPMENT_MILESTONE, SUBSCRIPTION, RETAINER, FINAL_PAYMENT, PART_PAYMENT, OTHER.

@@ -45,7 +45,7 @@ export default async function OpportunityDetailPage({ params }: { params: { id: 
     ["Industry", opportunity.industry],
     ["Product", opportunity.product],
     ["Product Category", opportunity.productCategory?.replace(/_/g, " ")],
-    ["Opportunity Type", opportunity.opportunityType],
+    ["Lead Type", opportunity.opportunityType],
     ["Client Outcome Type", opportunity.outcomeType?.replace(/_/g, " ")],
     ["Lead Source", opportunity.leadSource?.replace(/_/g, " ")],
     ["Stage", getStageLabel(opportunity.stage)],
@@ -73,18 +73,18 @@ export default async function OpportunityDetailPage({ params }: { params: { id: 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link href="/opportunities" className="inline-flex items-center gap-2 text-sm font-medium text-orange-700 hover:text-orange-800">
-            <ArrowLeft className="h-4 w-4" /> Back to Opportunities
+            <ArrowLeft className="h-4 w-4" /> Back to Leads
           </Link>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight">{opportunity.companyName}</h2>
         </div>
         <Link href={`/opportunities/${opportunity.id}/edit`} className="inline-flex items-center gap-2 rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
-          <Edit className="h-4 w-4" /> Edit Opportunity
+          <Edit className="h-4 w-4" /> Edit Lead
         </Link>
       </div>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">Opportunity Details</h2>
+          <h2 className="text-lg font-semibold">Lead Details</h2>
           <span className={`inline-flex rounded-full border px-3 py-1 text-sm font-medium ${getStageBadgeClass(opportunity.stage)}`}>{getStageLabel(opportunity.stage)}</span>
         </div>
         <dl className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">

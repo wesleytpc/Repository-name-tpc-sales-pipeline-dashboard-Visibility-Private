@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { Opportunity } from "@prisma/client";
-import { calculateWeightedValue, getStageLabel, pipelineStages } from "@/lib/pipeline";
+import { calculateWeightedValue, getStageLabel, normaliseVisibleStage, visiblePipelineStages } from "@/lib/pipeline";
 import { formatCurrency, formatDate } from "@/lib/format";
 
-const boardStages = pipelineStages.filter((stage) => stage !== "LOST_NO_FIT");
+const boardStages = visiblePipelineStages.filter((stage) => stage !== "LOST_NO_FIT");
 
 export function PipelineBoard({ opportunities }: { opportunities: Opportunity[] }) {
   const active = opportunities.filter((item) => item.status === "ACTIVE" || item.status === "WON");
@@ -19,7 +19,7 @@ export function PipelineBoard({ opportunities }: { opportunities: Opportunity[] 
       <div className="mt-5 overflow-x-auto pb-2">
         <div className="grid min-w-[1280px] grid-cols-6 gap-3 xl:grid-cols-11">
           {boardStages.map((stage) => {
-            const stageItems = active.filter((item) => item.stage === stage);
+            const stageItems = active.filter((item) => normaliseVisibleStage(item.stage) === stage);
             const total = stageItems.reduce((sum, item) => sum + item.estimatedValue, 0);
             const weighted = stageItems.reduce((sum, item) => sum + calculateWeightedValue(item.estimatedValue, item.probability), 0);
 
@@ -33,11 +33,20 @@ export function PipelineBoard({ opportunities }: { opportunities: Opportunity[] 
                 </div>
                 <div className="mt-3 space-y-2">
                   {stageItems.slice(0, 6).map((item) => (
-                    <Link key={item.id} href={`/opportunities/${item.id}`} className="block rounded-md border border-slate-200 bg-white p-3 hover:border-orange-200 hover:bg-orange-50">
-                      <p className="text-sm font-semibold text-slate-950">{item.companyName}</p>
-                      <p className="mt-1 text-xs text-slate-600">{item.product || "No product"}</p>
-                      <p className="mt-2 text-xs font-medium text-slate-900">{formatCurrency(item.estimatedValue)}</p>
-                      <p className="mt-1 text-xs text-slate-500">Next: {item.nextStep || "-"} | {formatDate(item.nextStepDate)}</p>
+                    <Link
+                      key={item.id}
+                      href={`/opportunities/${item.id}`}
+                      title={`${item.companyName}\n${item.product || "No product"}\nValue: ${formatCurrency(item.estimatedValue)}\nNext: ${item.nextStep || "-"} (${formatDate(item.nextStepDate)})`}
+                      className="group relative block rounded-md border border-slate-200 bg-white p-3 hover:border-orange-200 hover:bg-orange-50"
+                    >
+                      <p className="truncate text-sm font-semibold text-slate-950">{item.companyName}</p>
+                      <p className="mt-1 truncate text-xs text-slate-600">{item.product || "No product"}</p>
+                      <div className="pointer-events-none absolute left-2 top-full z-20 mt-2 hidden w-72 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700 shadow-lg group-hover:block">
+                        <p className="font-semibold text-slate-950">{item.companyName}</p>
+                        <p className="mt-1">{item.product || "No product"}</p>
+                        <p className="mt-1">Value: {formatCurrency(item.estimatedValue)}</p>
+                        <p className="mt-1">Next: {item.nextStep || "-"} | {formatDate(item.nextStepDate)}</p>
+                      </div>
                     </Link>
                   ))}
                   {stageItems.length > 6 ? <p className="text-xs text-slate-500">+ {stageItems.length - 6} more</p> : null}

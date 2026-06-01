@@ -30,7 +30,7 @@ import { grantPipelineAccess, validatePipelineLogin } from "@/lib/pipeline-auth"
 import { prisma } from "@/lib/prisma";
 import { grantSlipsAccess, isValidSlipsPin, revokeSlipsAccess } from "@/lib/slips-auth";
 import { parseMeetingInboxNote, type ParsedMeetingInboxNote } from "@/lib/meeting-inbox";
-import { getProbabilityForStage, stageProbabilities } from "@/lib/pipeline";
+import { getProbabilityForStage, normaliseVisibleStage, stageProbabilities } from "@/lib/pipeline";
 import { extractTranscriptInsights } from "@/lib/transcript";
 
 function optionalString(value: FormDataEntryValue | null) {
@@ -115,7 +115,7 @@ async function fileToStoredText(file: FormDataEntryValue | null) {
 }
 
 function opportunityData(formData: FormData) {
-  const stage = enumValue(formData.get("stage"), Object.values(PipelineStage), "LEAD_IDENTIFIED");
+  const stage = normaliseVisibleStage(enumValue(formData.get("stage"), Object.values(PipelineStage), "LEAD_IDENTIFIED")) as PipelineStage;
   const probability = Math.min(100, Math.max(0, intValue(formData.get("probability"), getProbabilityForStage(stage))));
 
   return {
@@ -186,12 +186,13 @@ export async function markOpportunityLost(id: string) {
 }
 
 export async function updateOpportunityStage(id: string, stage: PipelineStage) {
+  const nextStage = normaliseVisibleStage(stage) as PipelineStage;
   await prisma.opportunity.update({
     where: { id },
     data: {
-      stage,
-      probability: getProbabilityForStage(stage),
-      status: stage === "PAYMENT_RECEIVED" ? "WON" : undefined,
+      stage: nextStage,
+      probability: getProbabilityForStage(nextStage),
+      status: nextStage === "PAYMENT_RECEIVED" ? "WON" : undefined,
     },
   });
   revalidatePath("/dashboard");
@@ -247,7 +248,7 @@ export async function createMeetingNote(opportunityId: string, formData: FormDat
       select: { stage: true, status: true },
     });
 
-    if (!opportunity) throw new Error("Opportunity not found");
+    if (!opportunity) throw new Error("Lead not found");
 
     const shouldMoveToMeetingHeld =
       opportunity.status === "ACTIVE" &&
@@ -537,7 +538,7 @@ export async function createMeetingInboxNote(formData: FormData) {
       matchedOpportunityId: opportunity?.id,
       status,
       warning: !opportunity
-        ? "No matching opportunity found. Review and choose a client before applying."
+        ? "No matching lead found. Review and choose a client before applying."
         : !parsed.summary
           ? "No meeting summary found. Review before applying."
           : null,
@@ -559,8 +560,15 @@ export async function archiveMeetingInboxNote(id: string) {
   revalidatePath("/dashboard");
 }
 
+export async function deleteMeetingInboxNote(id: string) {
+  await prisma.meetingInboxNote.delete({ where: { id } });
+
+  revalidatePath("/meeting-inbox");
+  revalidatePath("/dashboard");
+}
+
 export async function applyMeetingInboxNote(id: string, formData: FormData) {
-  const opportunityId = requiredString(formData.get("opportunityId"), "Opportunity");
+  const opportunityId = requiredString(formData.get("opportunityId"), "Lead");
   const inboxNote = await prisma.meetingInboxNote.findUnique({ where: { id } });
   if (!inboxNote) throw new Error("Meeting inbox note not found");
 
@@ -626,7 +634,7 @@ export async function applyMeetingInboxNote(id: string, formData: FormData) {
       });
     }
 
-    const stageSuggestion = parsed.stageSuggestion;
+    const stageSuggestion = parsed.stageSuggestion ? normaliseVisibleStage(parsed.stageSuggestion) as PipelineStage : undefined;
     await tx.opportunity.update({
       where: { id: opportunityId },
       data: {
@@ -678,7 +686,7 @@ export async function createOpportunityFromInboxNote(id: string, formData: FormD
     parsed.paymentSignals ? `Payment signals:\n${parsed.paymentSignals}` : "",
     parsed.notes ? `Notes:\n${parsed.notes}` : "",
   ].filter(Boolean).join("\n\n") || undefined;
-  const stage = parsed.stageSuggestion ?? "MEETING_HELD";
+  const stage = (parsed.stageSuggestion ? normaliseVisibleStage(parsed.stageSuggestion) : "MEETING_HELD") as PipelineStage;
   const estimatedValue = parsed.paymentSchedule?.reduce((sum, payment) => sum + payment.amount, 0) ?? 0;
 
   let opportunityId = "";
@@ -758,7 +766,7 @@ export async function createOpportunityFromInboxNote(id: string, formData: FormD
       data: {
         opportunityId,
         type: "MEETING",
-        description: "New opportunity created from meeting inbox note.",
+        description: "New lead created from meeting inbox note.",
         activityDate: meetingDate,
       },
     });
@@ -833,6 +841,20 @@ export async function createSalesperson(formData: FormData) {
 
   revalidatePath("/finance");
   redirect("/finance");
+}
+
+export async function deleteSalesperson(id: string) {
+  await prisma.salesperson.delete({ where: { id } });
+
+  revalidatePath("/finance");
+}
+
+export async function deleteMeetingNote(opportunityId: string, meetingNoteId: string) {
+  await prisma.meetingNote.delete({ where: { id: meetingNoteId } });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/opportunities");
+  revalidatePath(`/opportunities/${opportunityId}`);
 }
 
 export async function unlockFinanceArea(formData: FormData) {

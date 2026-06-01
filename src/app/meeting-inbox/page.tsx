@@ -1,8 +1,8 @@
-import { Archive, CheckCircle2, PlusCircle } from "lucide-react";
+import { Archive, CheckCircle2, PlusCircle, Trash2 } from "lucide-react";
 import { CopyPromptCard } from "@/components/CopyPromptCard";
 import { MeetingInboxPasteForm } from "@/components/MeetingInboxPasteForm";
 import { prisma } from "@/lib/prisma";
-import { applyMeetingInboxNote, archiveMeetingInboxNote, createOpportunityFromInboxNote } from "@/lib/actions";
+import { applyMeetingInboxNote, archiveMeetingInboxNote, createOpportunityFromInboxNote, deleteMeetingInboxNote } from "@/lib/actions";
 import { chatGptMeetingTemplate, parseMeetingInboxNote, type ParsedMeetingInboxNote } from "@/lib/meeting-inbox";
 import { formatDate } from "@/lib/format";
 
@@ -29,7 +29,7 @@ export default async function MeetingInboxPage({
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">Meeting Inbox</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Paste structured ChatGPT meeting notes here, review them, then apply them safely to the correct client opportunity.
+            Paste structured ChatGPT meeting notes here, review them, then apply them safely to the correct client lead.
           </p>
         </div>
         <div className="rounded-md bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-700">
@@ -94,6 +94,7 @@ function InboxNoteCard({
   const applyAction = applyMeetingInboxNote.bind(null, note.id);
   const createAction = createOpportunityFromInboxNote.bind(null, note.id);
   const archiveAction = archiveMeetingInboxNote.bind(null, note.id);
+  const deleteAction = deleteMeetingInboxNote.bind(null, note.id);
   const inactive = ["APPLIED", "ARCHIVED"].includes(note.status);
 
   return (
@@ -123,7 +124,7 @@ function InboxNoteCard({
         <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 md:flex-row md:items-end">
           <form action={applyAction} className="flex flex-1 flex-col gap-2 md:flex-row md:items-end">
             <label className="flex-1 text-sm font-medium text-slate-700">
-              Apply to Opportunity
+              Apply to Lead
               <select name="opportunityId" defaultValue={note.matchedOpportunityId ?? ""} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                 <option value="">Choose client</option>
                 {opportunities.map((opportunity) => (
@@ -137,7 +138,7 @@ function InboxNoteCard({
             </button>
           </form>
           <form action={createAction} className="rounded-md border border-orange-200 bg-orange-50 p-3 md:min-w-[320px]">
-            <p className="text-sm font-semibold text-orange-950">Create New Opportunity</p>
+            <p className="text-sm font-semibold text-orange-950">Create New Lead</p>
             <div className="mt-2 grid gap-2">
               <input
                 name="companyName"
@@ -168,6 +169,22 @@ function InboxNoteCard({
             <button className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 md:w-auto">
               <Archive className="h-4 w-4" />
               Archive
+            </button>
+          </form>
+          <form action={deleteAction}>
+            <button className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 md:w-auto">
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </button>
+          </form>
+        </div>
+      ) : null}
+      {inactive ? (
+        <div className="mt-4 border-t border-slate-200 pt-4">
+          <form action={deleteAction}>
+            <button className="inline-flex items-center justify-center gap-2 rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50">
+              <Trash2 className="h-4 w-4" />
+              Delete Note
             </button>
           </form>
         </div>

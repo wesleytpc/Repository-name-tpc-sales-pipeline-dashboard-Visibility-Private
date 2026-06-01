@@ -1,6 +1,6 @@
-import { KeyRound, Lock, Percent, Plus, ShieldCheck, UsersRound, WalletCards } from "lucide-react";
+import { KeyRound, Lock, Percent, Plus, ShieldCheck, Trash2, UsersRound, WalletCards } from "lucide-react";
 import { DashboardCard } from "@/components/DashboardCard";
-import { createSalesperson, lockFinanceArea, unlockFinanceArea } from "@/lib/actions";
+import { createSalesperson, deleteSalesperson, lockFinanceArea, unlockFinanceArea } from "@/lib/actions";
 import { hasFinanceAccess } from "@/lib/finance-auth";
 import { formatDate, formatPercent } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -11,6 +11,9 @@ const inputClass =
   "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100";
 
 async function ensureDefaultSalespeople() {
+  const count = await prisma.salesperson.count();
+  if (count > 0) return;
+
   await prisma.salesperson.createMany({
     data: [
       {
@@ -163,6 +166,12 @@ export default async function FinancePage({
                 </div>
               </dl>
               {person.notes ? <p className="mt-4 whitespace-pre-line text-sm text-slate-700">{person.notes}</p> : null}
+              <form action={deleteSalesperson.bind(null, person.id)} className="mt-4">
+                <button className="inline-flex items-center gap-2 rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50">
+                  <Trash2 className="h-4 w-4" />
+                  Delete Profile
+                </button>
+              </form>
             </article>
           ))}
         </div>

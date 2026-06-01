@@ -68,7 +68,7 @@ const opportunities: Array<{
     industry: "Education",
     product: "Unity LMS",
     opportunityType: "Learning Platform",
-    stage: "VERBAL_APPROVAL",
+    stage: "PO_CONTRACT_INVOICE_REQUESTED",
     estimatedValue: 220000,
     expectedCloseDate: new Date("2026-06-21"),
     nextStep: "Send invoice details",

@@ -32,7 +32,7 @@ export function CsvImportForm() {
   return (
     <div className="space-y-5">
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-card">
-        <h2 className="text-lg font-semibold">Import Opportunities</h2>
+        <h2 className="text-lg font-semibold">Import Leads</h2>
         <p className="mt-1 text-sm text-slate-600">Upload a CSV, review the preview and warnings, then import valid rows.</p>
         <input
           type="file"

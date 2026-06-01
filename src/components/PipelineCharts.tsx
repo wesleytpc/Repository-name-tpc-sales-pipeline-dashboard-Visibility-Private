@@ -15,7 +15,7 @@ import {
   YAxis,
 } from "recharts";
 import type { Opportunity } from "@prisma/client";
-import { calculateWeightedValue, getStageLabel, pipelineStages } from "@/lib/pipeline";
+import { calculateWeightedValue, getStageLabel, normaliseVisibleStage, visiblePipelineStages } from "@/lib/pipeline";
 import { formatCurrency } from "@/lib/format";
 
 const colours = ["#f97316", "#111827", "#64748b", "#94a3b8", "#22c55e", "#2563eb", "#ef4444"];
@@ -23,9 +23,9 @@ const colours = ["#f97316", "#111827", "#64748b", "#94a3b8", "#22c55e", "#2563eb
 export function PipelineCharts({ opportunities }: { opportunities: Opportunity[] }) {
   const active = opportunities.filter((item) => item.status === "ACTIVE");
 
-  const byStage = pipelineStages.map((stage) => ({
+  const byStage = visiblePipelineStages.map((stage) => ({
     stage: getStageLabel(stage),
-    value: active.filter((item) => item.stage === stage).reduce((sum, item) => sum + item.estimatedValue, 0),
+    value: active.filter((item) => normaliseVisibleStage(item.stage) === stage).reduce((sum, item) => sum + item.estimatedValue, 0),
   })).filter((item) => item.value > 0);
 
   const byIndustry = Object.values(active.reduce<Record<string, { name: string; count: number }>>((acc, item) => {
@@ -63,7 +63,7 @@ export function PipelineCharts({ opportunities }: { opportunities: Opportunity[]
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
-      <ChartCard title="Opportunities by Industry">
+      <ChartCard title="Leads by Industry">
         <ResponsiveContainer width="100%" height={280}>
           <PieChart>
             <Pie data={byIndustry} dataKey="count" nameKey="name" outerRadius={95} label>

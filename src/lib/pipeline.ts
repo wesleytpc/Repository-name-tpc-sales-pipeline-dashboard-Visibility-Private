@@ -9,7 +9,7 @@ export const stageLabels: Record<PipelineStage, string> = {
   DEMO_COMPLETED: "Demo Completed",
   PROPOSAL_SENT: "Proposal Sent",
   NEGOTIATION_FOLLOW_UP: "Negotiation / Follow-Up",
-  VERBAL_APPROVAL: "Verbal Approval",
+  VERBAL_APPROVAL: "PO / Contract / Invoice Requested",
   PO_CONTRACT_INVOICE_REQUESTED: "PO / Contract / Invoice Requested",
   PAYMENT_RECEIVED: "Payment Received",
   LOST_NO_FIT: "Lost / No Fit",
@@ -24,13 +24,18 @@ export const stageProbabilities: Record<PipelineStage, number> = {
   DEMO_COMPLETED: 40,
   PROPOSAL_SENT: 50,
   NEGOTIATION_FOLLOW_UP: 60,
-  VERBAL_APPROVAL: 75,
+  VERBAL_APPROVAL: 90,
   PO_CONTRACT_INVOICE_REQUESTED: 90,
   PAYMENT_RECEIVED: 100,
   LOST_NO_FIT: 0,
 };
 
 export const pipelineStages = Object.keys(stageLabels) as PipelineStage[];
+export const visiblePipelineStages = pipelineStages.filter((stage) => stage !== "VERBAL_APPROVAL");
+
+export function normaliseVisibleStage(stage: PipelineStage | string) {
+  return stage === "VERBAL_APPROVAL" ? "PO_CONTRACT_INVOICE_REQUESTED" : stage;
+}
 
 export function getStageLabel(stage: PipelineStage | string) {
   return stageLabels[stage as PipelineStage] ?? String(stage).replace(/_/g, " ");
@@ -52,7 +57,6 @@ export function isProposalStage(stage: PipelineStage | string) {
   return [
     "PROPOSAL_SENT",
     "NEGOTIATION_FOLLOW_UP",
-    "VERBAL_APPROVAL",
     "PO_CONTRACT_INVOICE_REQUESTED",
     "PAYMENT_RECEIVED",
   ].includes(String(stage));

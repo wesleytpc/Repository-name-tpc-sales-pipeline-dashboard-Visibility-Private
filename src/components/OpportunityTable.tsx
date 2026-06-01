@@ -3,11 +3,11 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Opportunity } from "@prisma/client";
-import { calculateWeightedValue, getStageBadgeClass, getStageLabel, stageLabels } from "@/lib/pipeline";
+import { calculateWeightedValue, getStageBadgeClass, getStageLabel, normaliseVisibleStage, visiblePipelineStages } from "@/lib/pipeline";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
 import { EmptyState } from "@/components/EmptyState";
 
-const allStages = Object.keys(stageLabels);
+const allStages = visiblePipelineStages;
 
 export function OpportunityTable({ opportunities }: { opportunities: Opportunity[] }) {
   const [search, setSearch] = useState("");
@@ -24,7 +24,7 @@ export function OpportunityTable({ opportunities }: { opportunities: Opportunity
     return opportunities.filter((item) => {
       const searchable = [item.companyName, item.contactName, item.industry, item.product].join(" ").toLowerCase();
       return (!term || searchable.includes(term))
-        && (!stage || item.stage === stage)
+        && (!stage || normaliseVisibleStage(item.stage) === stage)
         && (!status || item.status === status)
         && (!industry || item.industry === industry)
         && (!product || item.product === product);
@@ -32,7 +32,7 @@ export function OpportunityTable({ opportunities }: { opportunities: Opportunity
   }, [opportunities, search, stage, status, industry, product]);
 
   if (!opportunities.length) {
-    return <EmptyState message="No opportunities found. Add your first opportunity or import a CSV file." actionHref="/opportunities/new" actionLabel="Add Opportunity" />;
+    return <EmptyState message="No leads found. Add your first lead or import a CSV file." actionHref="/opportunities/new" actionLabel="Add Lead" />;
   }
 
   const filterClass = "rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100";
@@ -40,7 +40,7 @@ export function OpportunityTable({ opportunities }: { opportunities: Opportunity
   return (
     <div className="space-y-4">
       <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-5">
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search opportunities" className={filterClass} />
+        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search leads" className={filterClass} />
         <select value={stage} onChange={(event) => setStage(event.target.value)} className={filterClass}>
           <option value="">All stages</option>
           {allStages.map((item) => <option key={item} value={item}>{getStageLabel(item)}</option>)}
@@ -101,7 +101,7 @@ export function OpportunityTable({ opportunities }: { opportunities: Opportunity
           </table>
         </div>
       ) : (
-        <EmptyState title="No search results" message="No opportunities match the current search and filters." />
+        <EmptyState title="No search results" message="No leads match the current search and filters." />
       )}
     </div>
   );

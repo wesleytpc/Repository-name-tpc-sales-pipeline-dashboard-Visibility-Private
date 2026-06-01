@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import type { Opportunity, OpportunityStatus, PipelineStage } from "@prisma/client";
-import { stageLabels, stageProbabilities } from "@/lib/pipeline";
+import { stageLabels, stageProbabilities, visiblePipelineStages } from "@/lib/pipeline";
 import { toInputDate } from "@/lib/format";
 import { isKnownOpportunityType, opportunityTypes } from "@/lib/opportunity-types";
 import { clientOutcomeTypeLabels, leadSourceLabels, lostReasonLabels, productCategoryLabels } from "@/lib/sales-options";
 
 const statuses: OpportunityStatus[] = ["ACTIVE", "WON", "LOST", "ON_HOLD"];
-const stages = Object.keys(stageLabels) as PipelineStage[];
+const stages = visiblePipelineStages;
 
 type Action = (formData: FormData) => void | Promise<void>;
 
@@ -21,7 +21,7 @@ export function OpportunityForm({
   action: Action;
   submitLabel: string;
 }) {
-  const initialStage = opportunity?.stage ?? "LEAD_IDENTIFIED";
+  const initialStage = opportunity?.stage === "VERBAL_APPROVAL" ? "PO_CONTRACT_INVOICE_REQUESTED" : opportunity?.stage ?? "LEAD_IDENTIFIED";
   const initialOpportunityType = isKnownOpportunityType(opportunity?.opportunityType) ? opportunity?.opportunityType ?? "" : "Other";
   const [stage, setStage] = useState<PipelineStage>(initialStage);
   const [probability, setProbability] = useState(String(opportunity?.probability ?? stageProbabilities[initialStage]));
@@ -88,7 +88,7 @@ export function OpportunityForm({
           </select>
         </label>
         <label className={labelClass}>
-          Opportunity Type
+          Lead Type
           <select
             name="opportunityType"
             value={opportunityType}
@@ -104,7 +104,7 @@ export function OpportunityForm({
             <input
               name="opportunityTypeOther"
               defaultValue={isKnownOpportunityType(defaults.opportunityType) ? "" : defaults.opportunityType}
-              placeholder="Type opportunity type"
+              placeholder="Type lead type"
               className={inputClass}
             />
           ) : null}

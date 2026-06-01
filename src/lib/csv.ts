@@ -1,5 +1,5 @@
 import { OpportunityStatus, PipelineStage } from "@prisma/client";
-import { getProbabilityForStage } from "@/lib/pipeline";
+import { getProbabilityForStage, normaliseVisibleStage } from "@/lib/pipeline";
 
 export type CsvOpportunityRow = {
   companyName?: string;
@@ -85,6 +85,7 @@ export function normaliseCsvRows(rows: CsvOpportunityRow[]) {
       warnings.push("Stage is invalid; defaulted to Lead Identified");
       stage = "LEAD_IDENTIFIED";
     }
+    stage = normaliseVisibleStage(stage) as PipelineStage;
 
     let status = (clean(row.status) ?? "ACTIVE").toUpperCase() as OpportunityStatus;
     if (!statuses.has(status)) {

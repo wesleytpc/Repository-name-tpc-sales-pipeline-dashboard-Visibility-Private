@@ -21,7 +21,7 @@ export function ActivityLog({ opportunityId, activities }: { opportunityId: stri
               <p className="mt-2 text-xs text-slate-500">Created {formatDate(activity.createdAt)}</p>
             </div>
           )) : (
-            <EmptyState title="No activities yet" message="Add calls, meetings, demos, notes and payment updates as the opportunity moves forward." />
+            <EmptyState title="No activities yet" message="Add calls, meetings, demos, notes and payment updates as the lead moves forward." />
           )}
         </div>
       </div>

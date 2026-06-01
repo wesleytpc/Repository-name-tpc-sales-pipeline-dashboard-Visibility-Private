@@ -1,6 +1,6 @@
 import type { MeetingAttachment, MeetingNote } from "@prisma/client";
-import { CalendarDays, FileText, Link as LinkIcon, Mic2, Users } from "lucide-react";
-import { createMeetingNote } from "@/lib/actions";
+import { CalendarDays, FileText, Link as LinkIcon, Mic2, Trash2, Users } from "lucide-react";
+import { createMeetingNote, deleteMeetingNote } from "@/lib/actions";
 import { formatDate } from "@/lib/format";
 import { EmptyState } from "@/components/EmptyState";
 
@@ -43,6 +43,12 @@ export function MeetingNotes({
                       Recording
                     </a>
                   ) : null}
+                  <form action={deleteMeetingNote.bind(null, opportunityId, note.id)}>
+                    <button className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50">
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
+                    </button>
+                  </form>
                 </div>
 
                 {note.attendees ? (
@@ -52,22 +58,11 @@ export function MeetingNotes({
                   </p>
                 ) : null}
 
-                <SectionLabel label="Meeting Summary" />
-                <p className="whitespace-pre-line text-sm text-slate-700">{note.summary}</p>
-
-                {note.customerNotes ? (
-                  <>
-                    <SectionLabel label="Customer Notes" />
-                    <p className="whitespace-pre-line text-sm text-slate-700">{note.customerNotes}</p>
-                  </>
-                ) : null}
-
-                {note.nextActions ? (
-                  <>
-                    <SectionLabel label="Next Actions" />
-                    <p className="whitespace-pre-line text-sm text-slate-700">{note.nextActions}</p>
-                  </>
-                ) : null}
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  <NoteCell label="Meeting Summary" value={note.summary} />
+                  <NoteCell label="Customer Notes" value={note.customerNotes} />
+                  <NoteCell label="Next Actions" value={note.nextActions} />
+                </div>
 
                 {note.transcript ? (
                   <details className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3">
@@ -160,8 +155,13 @@ export function MeetingNotes({
   );
 }
 
-function SectionLabel({ label }: { label: string }) {
-  return <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>;
+function NoteCell({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-2 line-clamp-6 whitespace-pre-line text-sm text-slate-700">{value || "-"}</p>
+    </div>
+  );
 }
 
 const inputClass = "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100";

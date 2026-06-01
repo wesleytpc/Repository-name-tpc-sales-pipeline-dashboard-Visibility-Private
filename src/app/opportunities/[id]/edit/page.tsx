@@ -15,8 +15,8 @@ export default async function EditOpportunityPage({ params }: { params: { id: st
   return (
     <div className="space-y-5">
       <div>
-        <Link href={`/opportunities/${opportunity.id}`} className="text-sm font-medium text-orange-700 hover:text-orange-800">Back to Opportunity</Link>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight">Edit Opportunity</h2>
+        <Link href={`/opportunities/${opportunity.id}`} className="text-sm font-medium text-orange-700 hover:text-orange-800">Back to Lead</Link>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight">Edit Lead</h2>
       </div>
       <OpportunityForm opportunity={opportunity} action={action} submitLabel="Save Changes" />
     </div>
