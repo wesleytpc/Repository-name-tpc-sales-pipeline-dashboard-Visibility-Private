@@ -99,7 +99,7 @@ export function MeetingNotes({
       <form action={addMeetingNote} className="rounded-lg border border-slate-200 bg-white p-5 shadow-card">
         <h2 className="text-lg font-semibold">Add Meeting Note</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Save the client conversation against this opportunity profile.
+          Save the client conversation against this lead profile.
         </p>
 
         <label className="mt-4 block text-sm font-medium text-slate-700">

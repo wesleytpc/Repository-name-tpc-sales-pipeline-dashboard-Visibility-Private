@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Opportunity } from "@prisma/client";
 import { calculateWeightedValue, getStageBadgeClass, getStageLabel, normaliseVisibleStage, visiblePipelineStages } from "@/lib/pipeline";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import { DeleteLeadButton } from "@/components/DeleteLeadButton";
 import { EmptyState } from "@/components/EmptyState";
 
 const allStages = visiblePipelineStages;
@@ -90,9 +91,10 @@ export function OpportunityTable({ opportunities }: { opportunities: Opportunity
                     <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700">{item.status.replace("_", " ")}</span>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       <Link className="text-sm font-medium text-orange-700 hover:text-orange-800" href={`/opportunities/${item.id}`}>View</Link>
                       <Link className="text-sm font-medium text-slate-700 hover:text-slate-950" href={`/opportunities/${item.id}/edit`}>Edit</Link>
+                      <DeleteLeadButton id={item.id} companyName={item.companyName} compact />
                     </div>
                   </td>
                 </tr>

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_FILE = /\.(.*)$/;
 const pipelineAuthCookieName = "tpc_pipeline_session";
+const pipelineSessionMaxAge = 60 * 60 * 24 * 30;
 
 function getAllowedUsers() {
   const multiUserConfig = process.env.BASIC_AUTH_USERS;
@@ -39,17 +40,17 @@ async function sha256(value: string) {
     .join("");
 }
 
-async function hasValidSession(request: NextRequest) {
+async function getValidSessionToken(request: NextRequest) {
   const sessionToken = request.cookies.get(pipelineAuthCookieName)?.value;
-  if (!sessionToken) return false;
+  if (!sessionToken) return null;
 
   const allowedUsers = getAllowedUsers();
   for (const user of allowedUsers) {
     const expectedToken = await sha256(`${user.username}:${sessionSecret()}`);
-    if (sessionToken === expectedToken) return true;
+    if (sessionToken === expectedToken) return expectedToken;
   }
 
-  return false;
+  return null;
 }
 
 export async function middleware(request: NextRequest) {
@@ -71,8 +72,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=not-configured", request.url));
   }
 
-  if (await hasValidSession(request)) {
-    return NextResponse.next();
+  const validSessionToken = await getValidSessionToken(request);
+  if (validSessionToken) {
+    const response = NextResponse.next();
+    response.cookies.set(pipelineAuthCookieName, validSessionToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: pipelineSessionMaxAge,
+      path: "/",
+    });
+    return response;
   }
 
   const loginUrl = new URL("/login", request.url);

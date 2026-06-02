@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import { cookies } from "next/headers";
 
 export const pipelineAuthCookieName = "tpc_pipeline_session";
+export const pipelineSessionMaxAge = 60 * 60 * 24 * 30;
 
 export function getAllowedPipelineUsers() {
   const multiUserConfig = process.env.BASIC_AUTH_USERS;
@@ -44,7 +45,7 @@ export function grantPipelineAccess(username: string) {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 10,
+    maxAge: pipelineSessionMaxAge,
     path: "/",
   });
 }

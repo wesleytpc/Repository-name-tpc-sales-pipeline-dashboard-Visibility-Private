@@ -38,7 +38,7 @@ export function PaymentRecords({
         </div>
 
         <p className="mt-2 text-sm text-slate-600">
-          Track money already received against this opportunity, even when the full deal is still in progress.
+          Track money already received against this lead, even when the full deal is still in progress.
         </p>
 
         <div className="mt-4 space-y-3">

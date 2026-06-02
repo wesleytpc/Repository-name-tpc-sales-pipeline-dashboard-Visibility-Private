@@ -12,6 +12,7 @@ export default function LoginPage({
   searchParams?: {
     error?: string;
     loggedOut?: string;
+    next?: string;
   };
 }) {
   const errorMessage =
@@ -73,6 +74,7 @@ export default function LoginPage({
             ) : null}
 
             <form action={loginPipeline} className="mt-6 space-y-4">
+              <input type="hidden" name="redirectTo" value={searchParams?.next ?? "/dashboard"} />
               <div>
                 <label htmlFor="username" className="text-sm font-medium text-slate-700">
                   Username

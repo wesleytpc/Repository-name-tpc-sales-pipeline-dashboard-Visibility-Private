@@ -6,6 +6,7 @@ import { calculateWeightedValue, getStageBadgeClass, getStageLabel, isProposalSt
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
 import { ActivityLog } from "@/components/ActivityLog";
 import { ContactList } from "@/components/ContactList";
+import { DeleteLeadButton } from "@/components/DeleteLeadButton";
 import { FinancialSummary } from "@/components/FinancialSummary";
 import { MeetingNotes } from "@/components/MeetingNotes";
 import { PaymentRecords } from "@/components/PaymentRecords";
@@ -77,9 +78,12 @@ export default async function OpportunityDetailPage({ params }: { params: { id: 
           </Link>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight">{opportunity.companyName}</h2>
         </div>
-        <Link href={`/opportunities/${opportunity.id}/edit`} className="inline-flex items-center gap-2 rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
-          <Edit className="h-4 w-4" /> Edit Lead
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href={`/opportunities/${opportunity.id}/edit`} className="inline-flex items-center gap-2 rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
+            <Edit className="h-4 w-4" /> Edit Lead
+          </Link>
+          <DeleteLeadButton id={opportunity.id} companyName={opportunity.companyName} />
+        </div>
       </div>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-card">

@@ -148,13 +148,14 @@ function opportunityData(formData: FormData) {
 export async function loginPipeline(formData: FormData) {
   const username = requiredString(formData.get("username"), "Username");
   const password = requiredString(formData.get("password"), "Password");
+  const redirectTo = optionalString(formData.get("redirectTo"));
 
   if (!validatePipelineLogin(username, password)) {
     redirect("/login?error=invalid");
   }
 
   grantPipelineAccess(username);
-  redirect("/dashboard");
+  redirect(redirectTo?.startsWith("/") && !redirectTo.startsWith("//") ? redirectTo : "/dashboard");
 }
 
 export async function createOpportunity(formData: FormData) {
@@ -183,6 +184,27 @@ export async function markOpportunityLost(id: string) {
   revalidatePath("/dashboard");
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${id}`);
+}
+
+export async function deleteOpportunity(id: string) {
+  await prisma.$transaction(async (tx) => {
+    await tx.meetingInboxNote.updateMany({
+      where: { matchedOpportunityId: id },
+      data: { matchedOpportunityId: null },
+    });
+
+    await tx.idea.updateMany({
+      where: { opportunityId: id },
+      data: { opportunityId: null },
+    });
+
+    await tx.opportunity.delete({ where: { id } });
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/opportunities");
+  revalidatePath("/meeting-inbox");
+  revalidatePath("/ideas");
 }
 
 export async function updateOpportunityStage(id: string, stage: PipelineStage) {
@@ -513,41 +535,63 @@ async function findMatchingOpportunity(client?: string | null) {
   });
 }
 
-export async function createMeetingInboxNote(formData: FormData) {
-  const rawText = requiredString(formData.get("rawText"), "Meeting Inbox Note");
-  const duplicate = await prisma.meetingInboxNote.findFirst({
-    where: {
-      rawText,
-      status: { in: ["UNPROCESSED", "NEEDS_REVIEW"] },
-    },
-    select: { id: true },
-  });
+export type MeetingInboxSaveState = {
+  status: "idle" | "saved" | "duplicate" | "error";
+  message: string;
+};
 
-  if (duplicate) {
-    redirect("/meeting-inbox?duplicate=1");
+export async function createMeetingInboxNote(
+  _previousState: MeetingInboxSaveState,
+  formData: FormData,
+): Promise<MeetingInboxSaveState> {
+  try {
+    const rawText = requiredString(formData.get("rawText"), "Meeting Inbox Note");
+    const duplicate = await prisma.meetingInboxNote.findFirst({
+      where: {
+        rawText,
+        status: { in: ["UNPROCESSED", "NEEDS_REVIEW"] },
+      },
+      select: { id: true },
+    });
+
+    if (duplicate) {
+      return {
+        status: "duplicate",
+        message: "This exact meeting note is already in the inbox, so it was not added again.",
+      };
+    }
+
+    const parsed = parseMeetingInboxNote(rawText);
+    const opportunity = await findMatchingOpportunity(parsed.client);
+    const status = opportunity && parsed.summary ? "UNPROCESSED" : "NEEDS_REVIEW";
+
+    await prisma.meetingInboxNote.create({
+      data: {
+        rawText,
+        parsedJson: parsed,
+        matchedOpportunityId: opportunity?.id,
+        status,
+        warning: !opportunity
+          ? "No matching lead found. Review and choose a client before applying."
+          : !parsed.summary
+            ? "No meeting summary found. Review before applying."
+            : null,
+      },
+    });
+
+    revalidatePath("/meeting-inbox");
+    revalidatePath("/dashboard");
+
+    return {
+      status: "saved",
+      message: "Meeting note saved to the inbox.",
+    };
+  } catch (error) {
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "The meeting note could not be saved. Please try again.",
+    };
   }
-
-  const parsed = parseMeetingInboxNote(rawText);
-  const opportunity = await findMatchingOpportunity(parsed.client);
-  const status = opportunity && parsed.summary ? "UNPROCESSED" : "NEEDS_REVIEW";
-
-  await prisma.meetingInboxNote.create({
-    data: {
-      rawText,
-      parsedJson: parsed,
-      matchedOpportunityId: opportunity?.id,
-      status,
-      warning: !opportunity
-        ? "No matching lead found. Review and choose a client before applying."
-        : !parsed.summary
-          ? "No meeting summary found. Review before applying."
-          : null,
-    },
-  });
-
-  revalidatePath("/meeting-inbox");
-  revalidatePath("/dashboard");
-  redirect("/meeting-inbox?saved=1");
 }
 
 export async function archiveMeetingInboxNote(id: string) {
